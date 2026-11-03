@@ -38,6 +38,7 @@ Next-day symptom status is framed as 6 simultaneous binary prediction tasks on D
 | **Cramps (Dysmenorrhea)** | 15.8% | 6.2% – 24.4% | Masked BCE positive weight $w \approx 5.3$ |
 | **Sore Breasts (Mastalgia)** | 11.6% | 3.0% – 19.9% | Masked BCE positive weight $w \approx 7.6$ |
 
+## 🏗️ Model Architecture (Multi-Task GRU)
 
   7-Day Rolling Input Window: [Day t−6, ..., Day t]
               Shape: (batch_size=64, seq_len=7, feat_dim=43)
@@ -167,16 +168,12 @@ The raw physiological signals and symptom diaries used in this study originate f
 Access is governed by the PhysioNet Credentialed Data Use Agreement (DUA).
 Per DUA terms, no raw patient logs, participant identifiers, or unaggregated cycle data are hosted in this repository.
 Researchers wishing to reproduce the raw data preprocessing must apply for credentialed access directly via PhysioNet mcPHASES.
+```
 
-📜 Citation & Academic Attribution
-bibtex
-@misc{aarushi2026premenstrual,
-  author = {Aarushi, S. and Ahmed, Tanveer},
-  title = {Multimodal Personalized Deep Learning for Premenstrual Symptom Forecasting},
-  year = {2026},
-  institution = {Symbiosis Institute of Technology (SIT), Symbiosis International University},
-  howpublished = {\url{https://github.com/<your-username>/multimodal-premenstrual-forecasting}}
-}
----
+## 📜 Citation & Academic Attribution
 
-## 🏗️ Model Architecture (Multi-Task GRU)
+* **Author:** Aarushi S. (under guidance of Dr. Tanveer Ahmed)
+* **Title:** Next-Day Menstrual-Cycle Symptom Forecasting on mcPHASES: A Leakage-Controlled Comparison of Baselines and Temporal Deep Learning, with an Exploratory Personalization Test
+* **Year:** 2026
+* **Institution:** Symbiosis Institute of Technology, Pune (Constituent of Symbiosis International Deemed University)
+
