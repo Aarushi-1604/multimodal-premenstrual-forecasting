@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Next-Day Menstrual Symptom Forecasting on mcPHASES</title>
+  <style>
+    :root {
+      --primary: #1a365d;
+      --primary-light: #2b6cb0;
+      --accent: #2ca02c;
+      --danger: #c53030;
+      --bg: #0f172a;
+      --slide-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --card-bg: #f8fafc;
+      --card-border: #e2e8f0;
+      --tag-bg: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Top Controls Bar */
+    .controls-bar {
+      position: fixed;
+      top: 12px;
+      display: flex;
+      gap: 12px;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .slide-counter {
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+    }
+
+    /* Slide Deck Container */
+    .deck-container {
+      width: 100%;
+      max-width: 1200px;
+      height: 675px; /* 16:9 Aspect Ratio */
+      position: relative;
+      margin: 60px auto 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--slide-bg);
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 36px 48px;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 14px;
+      overflow: hidden;
+      background: #ffffff;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Slide Headers */
+    .slide-header {
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .slide-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+
+    .slide-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .slide-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Content Layouts */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+      min-height: 0; /* important for flex overflow */
+    }
+
+    .content-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .content-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      font-size: 11px;
+      color: #334155;
+    }
+
+    ul.clean-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    ul.clean-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #334155;
+    }
+
+    ul.clean-list li::before {
+      content: "•";
+      position: absolute;
+      left: 4px;
+      color: #2563eb;
+      font-weight: bold;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .highlight-badge {
+      display: inline-block;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fef08a;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .stat-pill {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Images in Slides */
+    .slide-image-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .slide-image-box img {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .img-caption {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 6px;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* Tables */
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    .clean-table th {
+      background: #f1f5f9;
+      color: #334155;
+      padding: 6px 10px;
+      font-weight: 700;
+      border-bottom: 2px solid #cbd5e1;
+    }
+
+    .clean-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+
+    .clean-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .clean-table tr.highlight-row {
+      background: #ecfdf5;
+      font-weight: 600;
+    }
+
+    /* Slide 1 Specifics */
+    .title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+    }
+
+    .title-slide .badge {
+      background: rgba(37, 99, 235, 0.25);
+      color: #60a5fa;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .title-slide h1 {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      max-width: 950px;
+      color: #f8fafc;
+    }
+
+    .title-slide p.subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      max-width: 800px;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 850px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+    }
+
+    .meta-item {
+      text-align: center;
+    }
+
+    .meta-item .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .meta-item .val {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    /* Print Styles for PDF Export */
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .controls-bar {
+        display: none;
+      }
+      .deck-container {
+        width: 100%;
+        max-width: none;
+        height: auto;
+        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+      }
+      .slide {
+        position: relative;
+        display: flex !important;
+        opacity: 1 !important;
+        page-break-after: always;
+        height: 100vh;
+        width: 100vw;
+        padding: 40px 60px;
+      }
+      @page {
+        size: 16in 9in;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls Bar -->
+  <div class="controls-bar">
+    <button class="btn" onclick="prevSlide()" title="Previous Slide (Left Arrow)">◀ Prev</button>
+    <div class="slide-counter" id="slideNum">Slide 1 / 10</div>
+    <button class="btn" onclick="nextSlide()" title="Next Slide (Right Arrow or Space)">Next ▶</button>
+    <button class="btn btn-primary" onclick="window.print()" title="Save as PDF or Print">📄 Export PDF</button>
+    <button class="btn" onclick="toggleFullscreen()" title="Fullscreen presentation">⛶ Fullscreen</button>
+  </div>
+
+  <!-- Slide Deck Container -->
+  <div class="deck-container">
+
+    <!-- SLIDE 1: Title Slide -->
+    <div class="slide title-slide active" id="slide-1">
+      <div>
+        <div class="badge">B.Tech Deep Learning Lab End Semester Project</div>
+        <h1>Next-Day Menstrual-Cycle Symptom Forecasting on mcPHASES</h1>
+        <p class="subtitle">A Leakage-Controlled Comparison of Baselines and Temporal Deep Learning, with an Exploratory Personalization Test</p>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="label">Presenter</div>
+          <div class="val">Aarushi S. (PRN: 24070126004)</div>
+          <div class="val" style="font-size:12px; color:#94a3b8;">B.Tech AI & ML, Sem 5</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Faculty Guide</div>
+          <div class="val">Dr. Tanveer Ahmed</div>
+          <div class="val" style="font-size:12px; color:#94a3b8;">Associate Professor, SIT Pune</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Evaluation Domain</div>
+          <div class="val">PhysioNet mcPHASES (DUA)</div>
+          <div class="val" style="font-size:12px; color:#94a3b8;">42 Participants · 3,404 Windows</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 22px; display: flex; justify-content: center;">
+        <a href="https://github.com/Aarushi-1604/multimodal-premenstrual-forecasting" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #93c5fd; padding: 7px 18px; border-radius: 9999px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.2px;">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          github.com/Aarushi-1604/multimodal-premenstrual-forecasting
+        </a>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Problem Statement & Motivation -->
+    <div class="slide" id="slide-2">
+      <div class="slide-header">
+        <div class="slide-tag">Problem Formulation</div>
+        <div class="slide-title">Forecasting vs. Logging: Why Predict Next-Day Symptoms?</div>
+        <div class="slide-subtitle">Shifting from retrospective symptom logs to prospective next-day warnings (Day t+1)</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">🎯</span> Mathematical Problem Statement</div>
+            <p style="font-size:13px; line-height:1.5; color:#334155;">
+              Given a 7-day lookback window <strong>[t−6, t−5, ..., t]</strong> of multimodal signals (wearables, hormones, self-reports), predict whether each of <strong>6 target symptoms</strong> will be <strong>Moderate or Severe</strong> (ordinal score &ge; 3 on 0–5 scale) on day <strong>t+1</strong>:
+            </p>
+            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+              <span class="stat-pill">Cramps</span>
+              <span class="stat-pill">Mood Swings</span>
+              <span class="stat-pill">Fatigue</span>
+              <span class="stat-pill">Bloating</span>
+              <span class="stat-pill">Sore Breasts</span>
+              <span class="stat-pill">Headaches</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">💡</span> The Real-World Motivation</div>
+            <ul class="clean-list">
+              <li>Commercial apps (Flo, Stardust) only record what <em>already happened</em> or provide static calendar calculations.</li>
+              <li>A prospective forecast enables proactive planning (pain medication timing, work schedules, mental preparation).</li>
+              <li>Symptom presentation varies widely across individuals and across cycles, requiring individualized temporal modeling.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card" style="border-left: 4px solid #ef4444;">
+            <div class="card-title" style="color:#b91c1c;"><span class="icon" style="background:#fee2e2; color:#b91c1c;">⚠️</span> Three Inherent Technical Challenges</div>
+            <ul class="clean-list">
+              <li><strong>Missing Target Labels:</strong> Diary entries are voluntarily skipped. A skipped day is <em>unknown</em>, NOT <em>"no symptom"</em>. Imputing zero creates destructive negative bias.</li>
+              <li><strong>Subject-Identity Leakage:</strong> Consecutive daily readings from the same participant are highly correlated. Splitting randomly leaks personal baselines and inflates scores artificially.</li>
+              <li><strong>Extreme Class Imbalance & Small Cohort:</strong> 42 participants; sore breasts prevalence is only 11.6% and cramps is 15.8%, requiring metric choices beyond accuracy.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 3: Literature Gap & Motivation for Personalization -->
+    <div class="slide" id="slide-3">
+      <div class="slide-header">
+        <div class="slide-tag">Literature Review & Research Gap</div>
+        <div class="slide-title">Existing Research and the Need for Personalization</div>
+        <div class="slide-subtitle">Bridging the gap between population cycle-phase detection and individualized symptom prediction</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">📚</span> Benchmark 1: Wearables & Physiology</div>
+            <p style="font-size:12.5px; color:#334155; line-height:1.45;">
+              <strong>Goodale et al. (2019, JMIR):</strong> Studied 237 conception-seeking women with wristbands. Demonstrated significant biphasic shifts in wrist skin temperature and resting heart rate across menstrual phases.
+            </p>
+            <div style="font-size:12px; color:#64748b; margin-top:4px;">
+              <em>Limitation:</em> Focused on identifying the <strong>fertile window</strong> for conception, not daily symptom forecasting.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">📚</span> Benchmark 2: Phase Classification via Symptoms</div>
+            <p style="font-size:12.5px; color:#334155; line-height:1.45;">
+              <strong>Specht et al. (2026, mcPHASES preprint):</strong> Used CatBoost + Hidden Semi-Markov Model to classify 4 cycle phases solely from symptom diaries (67.6% LOSO accuracy).
+            </p>
+            <div style="font-size:12px; color:#64748b; margin-top:4px;">
+              <em>Key Takeaway:</em> Noted that <strong>intra-individual symptom variance</strong> is more predictive than raw severity.
+            </div>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card" style="border-left: 4px solid #2563eb; background:#f0fdf4;">
+            <div class="card-title" style="color:#166534;"><span class="icon" style="background:#dcfce7; color:#166534;">🎯</span> Why I Chose This Specific Problem Statement</div>
+            <ul class="clean-list">
+              <li>Both Goodale et al. and Specht et al. explicitly stated in their future scope that <strong>symptom personalization across multiple cycles</strong> was an unaddressed challenge.</li>
+              <li>Existing literature predicts <em>cycle phase</em> (macro-level), but patients suffer from <em>specific daily symptoms</em> (micro-level).</li>
+              <li><strong>Our Gap to Fill:</strong> First leakage-controlled benchmark directly evaluating whether a model tuned on a woman's <em>own historical cycles</em> outperforms a population model.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🔬</span> Core Research Questions (Hypotheses)</div>
+            <ul class="clean-list" style="font-size:12px;">
+              <li><strong>H3 (Temporal DL vs. Baselines):</strong> Can multi-task GRUs beat strong tabular models (CatBoost) under leakage-controlled validation?</li>
+              <li><strong>H1 (Personalization):</strong> Does a woman's own historical data provide predictive benefit beyond simply adding more data from other people?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 4: Dataset & Scoping Decisions -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <div class="slide-tag">Data Engineering</div>
+        <div class="slide-title">The mcPHASES Dataset & Evidence-Based Scoping</div>
+        <div class="slide-subtitle">PhysioNet v1.0.0 (42 young adult menstruators, Canada) across 23 linked tables</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">🔍</span> Rigorous Pre-Modeling Audit Decisions</div>
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Audit Finding</th>
+                  <th>Engineering Decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2024 interval was optional; symptoms <strong>99.4% missing</strong></td>
+                  <td><strong>Filter to 2022 only</strong> (3,698 days, ~10% missing)</td>
+                </tr>
+                <tr>
+                  <td>PdG hormone was <strong>0% populated</strong> in 2022</td>
+                  <td><strong>Drop PdG</strong>; keep LH & E3G (estrogen)</td>
+                </tr>
+                <tr>
+                  <td>Raw heart rate table had <strong>63.1 million rows</strong></td>
+                  <td><strong>Use daily aggregates</strong> (Resting HR, sleep, temp)</td>
+                </tr>
+                <tr>
+                  <td>Continuous glucose only ran for first 90 days</td>
+                  <td><strong>Exclude glucose</strong> (avoids extreme sparsity)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🧬</span> Total Feature Space: 43 Features per Day</div>
+            <ul class="clean-list" style="font-size:12px;">
+              <li><strong>12 Symptoms:</strong> Cramps, mood, fatigue, bloating, breasts, headaches, appetite, exercise, sleep issue, stress, cravings, indigestion (0 to 5 ordinal).</li>
+              <li><strong>12 Missingness Flags:</strong> Explicit binary indicators if diary was skipped.</li>
+              <li><strong>4 Hormones:</strong> Daily urinary LH and E3G levels + missing flags.</li>
+              <li><strong>10 Wearables:</strong> Resting HR, sleep minutes, awake, efficiency, wrist temp.</li>
+              <li><strong>4 Cycle Timing + 1 Calendar:</strong> Days since last onset, sin/cos of cycle position, weekend flag. <em>Note: Phase label excluded to prevent leakage!</em></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="slide-image-box">
+            <img src="figures/fig2_prevalence_range.png" alt="Target Prevalence across Folds">
+            <div class="img-caption">Figure: Positive prevalence per target (Cohort Mean & Fold-to-Fold Range across 5 GroupKFold splits)</div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 5: Data Pipeline & Causal Processing -->
+    <div class="slide" id="slide-5">
+      <div class="slide-header">
+        <div class="slide-tag">Methodology & Preprocessing</div>
+        <div class="slide-title">Data Pipeline & Causal Cycle-Onset Detection</div>
+        <div class="slide-subtitle">Constructing 7-day sliding windows while strictly preventing future information leakage</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="slide-image-box" style="height:210px;">
+            <img src="figures/fig1_pipeline_diagram.png" alt="Pipeline Diagram" style="max-height:190px;">
+            <div class="img-caption">Figure: Data reduction from 5,659 raw rows to 3,036 supervised evaluation windows</div>
+          </div>
+
+          <div class="card" style="margin-top:4px;">
+            <div class="card-title"><span class="icon">🛡️</span> The Masking Mechanism (M)</div>
+            <p style="font-size:12px; color:#334155; line-height:1.45;">
+              If a participant skipped the diary on day <strong>t+1</strong>, the target is marked <strong>NaN with Mask M = 0</strong>. Masked entries contribute <strong>zero loss and zero gradients</strong> during neural backpropagation:
+            </p>
+            <div style="font-size:11.5px; background:#f1f5f9; padding:4px 8px; border-radius:4px; margin-top:4px; font-family:monospace;">
+              Loss = &Sigma; (M &times; BCEWithLogitsLoss(&ycirc;, y)) / (&Sigma; M + &epsilon;)
+            </div>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">⚙️</span> Causal Cycle-Onset Detection & Bug Fix</div>
+            <ul class="clean-list">
+              <li><strong>The Challenge:</strong> Cycle phase and days-since-period cannot rely on cycle end date (that leaks the future!).</li>
+              <li><strong>The Bug Found:</strong> Comparing bleeding text strings directly caused 0 detected onsets; treating any bleeding day as onset caused 161 fragmented micro-cycles.</li>
+              <li><strong>The Clinical Rule:</strong> Bleeding within 3 days is bridged into 1 episode; a new onset requires a minimum 15-day gap. Detected exactly 79 intervals (median 29.0 days).</li>
+              <li><strong>Empirical Proof of Causality:</strong> Re-ran onset detection on truncated timelines up to day <em>t</em> across all 3,698 days: <strong>zero mismatches</strong> against stored features.</li>
+            </ul>
+          </div>
+
+          <div class="slide-image-box" style="height:170px;">
+            <img src="figures/fig3_cycle_intervals_hist.png" alt="Cycle Histogram" style="max-height:150px;">
+            <div class="img-caption">Figure: Distribution of 79 detected menstrual cycle lengths (Clinical range 21–35 days)</div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 6: Deep Learning Architecture -->
+    <div class="slide" id="slide-6">
+      <div class="slide-header">
+        <div class="slide-tag">Model Architecture</div>
+        <div class="slide-title">Multi-Task GRU & Deep Learning Formulation</div>
+        <div class="slide-subtitle">Capturing temporal sequence dependencies across 7-day sliding feature windows</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="slide-image-box">
+            <img src="figures/fig4_gru_schematic.png" alt="GRU Schematic" style="max-height:360px;">
+            <div class="img-caption">Figure: Multi-Task GRU temporal processing from sequence input to 6 next-day logits</div>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">🧠</span> Why Multi-Task GRU?</div>
+            <ul class="clean-list">
+              <li><strong>Multi-Task Sharing:</strong> Symptoms co-occur due to shared hormonal triggers (e.g. estrogen/progesterone drop). A shared hidden state learns joint menstrual dynamics.</li>
+              <li><strong>Temporal Sequence:</strong> Unlike flattened MLPs, the GRU explicitly models the trajectory of change across days t−6 &rarr; t.</li>
+              <li><strong>Capacity Control:</strong> Hidden size = 32 prevents overfitting on 42 participants (avoids Transformer/LSTM over-parameterization).</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">⚙️</span> Concrete Layer Specifications</div>
+            <table class="clean-table" style="font-size:11.5px;">
+              <tr>
+                <td><strong>Input Tensor</strong></td>
+                <td>Shape <code>(batch_size=64, seq_len=7, feat_dim=43)</code></td>
+              </tr>
+              <tr>
+                <td><strong>GRU Layer</strong></td>
+                <td><code>nn.GRU(input_size=43, hidden_size=32, batch_first=True)</code></td>
+              </tr>
+              <tr>
+                <td><strong>Readout</strong></td>
+                <td>Final hidden state <strong>h<sub>7</sub> &isin; &#8477;<sup>32</sup></strong> via <code>h_n.squeeze(0)</code></td>
+              </tr>
+              <tr>
+                <td><strong>Regularization</strong></td>
+                <td>Dropout (p = 0.3) + LayerNorm in MLP</td>
+              </tr>
+              <tr>
+                <td><strong>Projection Head</strong></td>
+                <td><code>nn.Linear(32, 6)</code> producing logits for 6 targets</td>
+              </tr>
+              <tr>
+                <td><strong>Optimizer</strong></td>
+                <td>AdamW (lr = 10<sup>-3</sup>, weight decay = 10<sup>-3</sup>), max 60 epochs</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 7: Leakage-Controlled Validation -->
+    <div class="slide" id="slide-7">
+      <div class="slide-header">
+        <div class="slide-tag">Validation Protocol</div>
+        <div class="slide-title">Leakage-Free Validation: GroupKFold & Inner Early Stopping</div>
+        <div class="slide-subtitle">Ensuring models generalize to completely unseen human participants</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">👥</span> Outer Split: 5-Fold GroupKFold by Participant</div>
+            <ul class="clean-list">
+              <li><strong>Why standard K-Fold fails:</strong> Daily time-series from the same person share unique baseline resting HR, sleep patterns, and reporting bias. Random splits memorize subject identity.</li>
+              <li><strong>Our Strict Partition:</strong> All windows from any participant are strictly in Train OR strictly in Test. Zero participant overlap across folds.</li>
+              <li><strong>Fold sizes:</strong> Test folds contain 9, 9, 8, 8, 8 participants (~600 evaluation windows each, 3,036 total).</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🔄</span> Inner Validation Split for Neural Models</div>
+            <ul class="clean-list">
+              <li>You cannot use the outer test set to stop training (leaks test data into stopping criteria!).</li>
+              <li>We partitioned outer-train into an <strong>inner 80/20 participant-grouped split</strong>.</li>
+              <li>AdamW trained on inner-train; early stopping monitored inner-val masked loss (patience = 12 epochs). Checkpoint restored at best validation loss.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">🧼</span> Train-Only Preprocessing Invariant</div>
+            <p style="font-size:12.5px; color:#334155; line-height:1.45;">
+              <code>SimpleImputer(strategy='median')</code> and <code>StandardScaler</code> are fit <strong>strictly on training fold rows</strong>. Test features are transformed using training statistics. Zero leakage of test distributions.
+            </p>
+          </div>
+
+          <div class="slide-image-box" style="height:210px;">
+            <img src="figures/fig8_neural_learning_curves.png" alt="Learning Curves" style="max-height:190px;">
+            <div class="img-caption">Figure: Inner-validation loss & PR-AUC trajectories (Fold 0), showing early stopping at epoch 22</div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 8: Experimental Results -->
+    <div class="slide" id="slide-8">
+      <div class="slide-header">
+        <div class="slide-tag">Benchmarking Results (H3)</div>
+        <div class="slide-title">Five-Model Prospective Comparison (N = 3,036 Windows)</div>
+        <div class="slide-subtitle">Comparing Persistence, Logistic Regression, CatBoost, Multi-Task MLP, and Multi-Task GRU</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card" style="padding:10px 14px;">
+            <div class="card-title" style="font-size:13px;"><span class="icon">📊</span> Mean PR-AUC across 5 Outer Folds</div>
+            <table class="clean-table" style="font-size:11px;">
+              <thead>
+                <tr>
+                  <th>Symptom</th>
+                  <th>Prev</th>
+                  <th>Persist</th>
+                  <th>LogReg</th>
+                  <th>CatBoost</th>
+                  <th>GRU</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Fatigue</td>
+                  <td>56.0%</td>
+                  <td>0.733</td>
+                  <td>0.819</td>
+                  <td style="font-weight:700; color:#15803d;">0.851</td>
+                  <td>0.824</td>
+                </tr>
+                <tr>
+                  <td>Bloating</td>
+                  <td>30.9%</td>
+                  <td>0.568</td>
+                  <td>0.649</td>
+                  <td style="font-weight:700; color:#15803d;">0.692</td>
+                  <td>0.683</td>
+                </tr>
+                <tr>
+                  <td>Mood Swings</td>
+                  <td>29.8%</td>
+                  <td>0.530</td>
+                  <td>0.647</td>
+                  <td style="font-weight:700; color:#15803d;">0.659</td>
+                  <td>0.649</td>
+                </tr>
+                <tr>
+                  <td>Headaches</td>
+                  <td>25.3%</td>
+                  <td>0.477</td>
+                  <td>0.646</td>
+                  <td style="font-weight:700; color:#15803d;">0.659</td>
+                  <td>0.635</td>
+                </tr>
+                <tr>
+                  <td>Cramps</td>
+                  <td>15.8%</td>
+                  <td>0.411</td>
+                  <td>0.503</td>
+                  <td style="font-weight:700; color:#15803d;">0.556</td>
+                  <td>0.549</td>
+                </tr>
+                <tr>
+                  <td>Sore Breasts</td>
+                  <td>11.6%</td>
+                  <td>0.406</td>
+                  <td>0.472</td>
+                  <td style="font-weight:700; color:#15803d;">0.517</td>
+                  <td>0.457</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🔍</span> Key Scientific Findings</div>
+            <ul class="clean-list" style="font-size:12px;">
+              <li><strong>CatBoost achieved highest PR-AUC on all 6 targets</strong> and lowest Brier score on 5 targets.</li>
+              <li><strong>GRU beat flattened MLP on all 6 targets:</strong> Proves that temporal sequence processing preserves valuable dynamics.</li>
+              <li><strong>The Persistence Nuance:</strong> At a fixed 0.5 decision threshold, Persistence matched/beat CatBoost on F1 for 4 targets due to autocorrelation. ML models excel at <em>probabilistic ranking</em>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="slide-image-box">
+            <img src="figures/fig5_pr_auc_comparison.png" alt="PR-AUC Comparison" style="max-height:360px;">
+            <div class="img-caption">Figure: PR-AUC across 5 models with fold-to-fold standard deviation error bars</div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 9: Exploratory Personalization Study -->
+    <div class="slide" id="slide-9">
+      <div class="slide-header">
+        <div class="slide-tag">Hypothesis H1 Evaluation</div>
+        <div class="slide-title">Exploratory Personalization: Own Data vs. More Data</div>
+        <div class="slide-subtitle">A 3-arm causal experiment to separate personal body alignment from training sample expansion</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">⚖️</span> The 3-Arm Experimental Design</div>
+            <table class="clean-table" style="font-size:11.5px;">
+              <thead>
+                <tr>
+                  <th>Arm</th>
+                  <th>Training Data Composition</th>
+                  <th>Added Windows</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>A (Population)</strong></td>
+                  <td>Training fold participants only</td>
+                  <td>0</td>
+                </tr>
+                <tr>
+                  <td><strong>B (Personalized)</strong></td>
+                  <td>A + participant <em>p</em>'s <em>own</em> earlier cycles</td>
+                  <td>Median +53</td>
+                </tr>
+                <tr>
+                  <td><strong>C (Control)</strong></td>
+                  <td>A + earlier cycles of <em>other</em> test participants</td>
+                  <td>Median +363</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="font-size:11.5px; color:#475569; margin-top:6px;">
+              <strong>The Causal Gap Rule:</strong> Every added window must finish (Day t+1) strictly before the owner's test cycle lookback begins. Zero leakage.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🔬</span> Cluster Bootstrap Insights (2,000 Reps)</div>
+            <ul class="clean-list" style="font-size:12px;">
+              <li><strong>The Clean Contrast (B &minus; C):</strong> Arm C adds 7&times; more data than Arm B. If B &gt; C, true personal identity matters.</li>
+              <li><strong>Sore Breasts (B &minus; C = +0.142 PR-AUC):</strong> Gained in 94.8% of resamples! Idiosyncratic symptoms require personal baseline.</li>
+              <li><strong>Cramps (B &minus; C &asymp; +0.003):</strong> Arm C helped as much as Arm B (C &minus; A = +0.075), showing general menstrual data helps cramps.</li>
+              <li><strong>Academic Honesty:</strong> 95% CIs cross zero &rarr; <em>promising, but unconfirmed on N = 42</em>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="slide-image-box">
+            <img src="figures/fig9_forest_plot_personalization.png" alt="Personalization Forest Plot" style="max-height:360px;">
+            <div class="img-caption">Figure: Forest plot of 2,000-replicate participant cluster bootstrap differences (B-A, C-A, B-C)</div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- SLIDE 10: Conclusion & Real-World Implications -->
+    <div class="slide" id="slide-10">
+      <div class="slide-header">
+        <div class="slide-tag">Conclusions & Roadmap</div>
+        <div class="slide-title">Conclusions, Limitations & Future Directions</div>
+        <div class="slide-subtitle">Translating computational findings into practical consumer digital health</div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">✅</span> Summary of Contributions</div>
+            <ul class="clean-list">
+              <li>Demonstrated that next-day premenstrual symptoms contain prospective forecasting signal well above naive persistence.</li>
+              <li>Established a rigorous, leakage-free benchmark on PhysioNet mcPHASES combining wearables, hormones, and diaries.</li>
+              <li>Proved that temporal deep learning (GRU) captures sequential structure better than flattened MLPs, while CatBoost remains strongest for tabular scales.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">⚠️</span> Honest Limitations</div>
+            <ul class="clean-list" style="font-size:12px;">
+              <li><strong>Small Cohort:</strong> 42 participants from a single Canadian study; results warrant larger multi-center validation.</li>
+              <li><strong>Hormone Dependency:</strong> Daily LH & estrogen require study-grade home kits not available to typical smartwatch users.</li>
+              <li><strong>Threshold Calibration:</strong> Models were tested at 0.5; clinical deployment requires user-tuned operating points.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-col">
+          <div class="card" style="border-left:4px solid #16a34a; background:#f0fdf4;">
+            <div class="card-title" style="color:#15803d;"><span class="icon" style="background:#dcfce7; color:#15803d;">🚀</span> High-Priority Future Work</div>
+            <ul class="clean-list">
+              <li><strong>Modality Ablation (H2):</strong> Quantify the exact isolated contribution of wearables-only vs. hormones vs. symptom history.</li>
+              <li><strong>Dynamic Decision Thresholding:</strong> Optimize classification thresholds per user preference (high recall for pain vs. high precision for mood).</li>
+              <li><strong>Wearables-Only Deployment:</strong> Eliminate hormone inputs and test on commercial PPG smartwatches (Fitbit / Apple Watch).</li>
+              <li><strong>User Study:</strong> Test whether advance warning notifications actually reduce symptom distress or induce anxiety.</li>
+            </ul>
+          </div>
+
+          <div class="card" style="text-align:center; padding:16px;">
+            <div style="font-size:16px; font-weight:800; color:#1e293b;">Thank You!</div>
+            <div style="font-size:13px; color:#64748b; margin-top:4px;">Questions & Viva Discussion Welcome</div>
+            <div style="margin-top: 10px;">
+              <a href="https://github.com/Aarushi-1604/multimodal-premenstrual-forecasting" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: #0f172a; color: #ffffff; padding: 7px 16px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">
+                <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                View Code & Benchmarks on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 10;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      
+      document.querySelectorAll('.slide').forEach((el, idx) => {
+        el.classList.remove('active');
+        if (idx === index - 1) {
+          el.classList.add('active');
+        }
+      });
+      
+      currentSlide = index;
+      document.getElementById('slideNum').textContent = `Slide ${currentSlide} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showSlide(1);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showSlide(totalSlides);
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>

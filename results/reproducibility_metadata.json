@@ -1,0 +1,34 @@
+{
+  "random_seed": 42,
+  "device": "cpu",
+  "dataset_path": "data\\processed\\windows_dataset.npz",
+  "n_samples": 3404,
+  "seq_len": 7,
+  "feat_dim": 43,
+  "cv_scheme": "5-fold GroupKFold by participant ID",
+  "inner_cv_scheme": "Nested 5-fold GroupKFold on outer-train for early stopping",
+  "models": {
+    "MLP": {
+      "in_features": 301,
+      "hidden": [
+        64,
+        32
+      ],
+      "dropout": 0.3,
+      "lr": 0.001,
+      "weight_decay": 0.001,
+      "max_epochs": 60,
+      "patience": 12
+    },
+    "GRU": {
+      "in_features": 43,
+      "hidden_size": 32,
+      "layers": 1,
+      "dropout": 0.3,
+      "lr": 0.001,
+      "weight_decay": 0.001,
+      "max_epochs": 60,
+      "patience": 12
+    }
+  }
+}

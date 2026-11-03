@@ -1,0 +1,27 @@
+# Raw and processed patient data (PhysioNet mcPHASES DUA restricted)
+/mcphases_data/
+/data/
+
+# Binary artifacts & weights
+*.npz
+*.npy
+*.pt
+*.pth
+*.parquet
+*.h5
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Model training telemetry & logs
+catboost_info/
+wandb/
+.ipynb_checkpoints/
+
+# Environment & OS files
+.env
+.DS_Store
+Thumbs.db
